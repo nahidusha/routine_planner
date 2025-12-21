@@ -21,7 +21,7 @@
                 <div class="mb-4">
                     <div class="avatar-placeholder rounded-circle bg-primary d-inline-flex align-items-center justify-content-center" 
                          style="width: 100px; height: 100px;">
-                        <span class="text-white fs-2">{{ user.username|first|upper }}</span>
+                        <span class="text-white fs-2">{{ user.username|slice:":1"|upper }}</span>
                     </div>
                 </div>
                 
@@ -119,26 +119,22 @@
                 <div class="row text-center">
                     <div class="col-md-4 mb-3">
                         <div class="p-3 bg-light rounded">
-                            <h3 class="text-primary mb-2">{{ user.dailyroutine_set.count }}</h3>
+                            <h3 class="text-primary mb-2">{{ total_routines|default:0 }}</h3>
                             <p class="mb-0 text-muted">Total Routines</p>
                         </div>
                     </div>
                     
                     <div class="col-md-4 mb-3">
                         <div class="p-3 bg-light rounded">
-                            {% with total_tasks=user.dailyroutine_set.tasks.count %}
-                            <h3 class="text-success mb-2">{{ total_tasks }}</h3>
+                            <h3 class="text-success mb-2">{{ total_tasks|default:0 }}</h3>
                             <p class="mb-0 text-muted">Total Tasks</p>
-                            {% endwith %}
                         </div>
                     </div>
                     
                     <div class="col-md-4 mb-3">
                         <div class="p-3 bg-light rounded">
-                            {% with completed=user.dailyroutine_set.tasks.filter.is_completed=True.count %}
-                            <h3 class="text-warning mb-2">{{ completed }}</h3>
+                            <h3 class="text-warning mb-2">{{ completed_tasks|default:0 }}</h3>
                             <p class="mb-0 text-muted">Completed Tasks</p>
-                            {% endwith %}
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title|default:'Edit Routine' }} - Daily Routine Planner{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+	<div class="col-12">
+		<h2 class="mb-0">{{ title|default:'Edit Routine' }}</h2>
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-lg-8">
+		<div class="card">
+			<div class="card-header">
+				<h5 class="mb-0"><i class="fas fa-edit me-2"></i> Routine Details</h5>
+			</div>
+			<div class="card-body">
+				<form method="post" id="routineForm">
+					{% csrf_token %}
+
+					<div class="mb-4">
+						<label for="id_date" class="form-label">Date</label>
+						{{ routine_form.date }}
+						{% if routine_form.date.errors %}
+							<div class="invalid-feedback d-block">
+								{% for error in routine_form.date.errors %}{{ error }}{% endfor %}
+							</div>
+						{% endif %}
+					</div>
+
+					<div class="mb-4">
+						<label for="id_notes" class="form-label">Notes (Optional)</label>
+						{{ routine_form.notes }}
+					</div>
+
+					<hr class="my-4">
+
+					<h5 class="mb-3"><i class="fas fa-tasks me-2"></i> Tasks</h5>
+
+					<div id="tasks-container" data-task-count="{{ task_formset.total_form_count|default:'0' }}">
+						{{ task_formset.management_form }}
+						{% for task_form in task_formset %}
+						<div class="task-form mb-3 p-3 border rounded">
+							{{ task_form.id }}
+							<div class="row">
+								<div class="col-md-3 mb-2">{{ task_form.time }}</div>
+								<div class="col-md-6 mb-2">{{ task_form.description }}</div>
+								<div class="col-md-3 mb-2">{{ task_form.category }}</div>
+							</div>
+							<div class="row">
+								<div class="col-md-6">{{ task_form.is_ibadah }}</div>
+								<div class="col-md-6">{{ task_form.is_completed }}</div>
+							</div>
+							{% if task_form.DELETE %}
+							<div class="mt-2">{{ task_form.DELETE }}</div>
+							{% endif %}
+						</div>
+						{% endfor %}
+					</div>
+
+					<div class="text-center mb-4">
+						<button type="button" id="add-task" class="btn btn-outline-primary">
+							<i class="fas fa-plus me-2"></i> Add New Task
+						</button>
+					</div>
+
+					<!-- Task template -->
+					<div id="task-template" class="d-none">
+						<div class="task-form mb-3 p-3 border rounded">
+							<div class="row">
+								<div class="col-md-3 mb-2">
+									<input type="text" name="tasks-__prefix__-time" class="form-control" placeholder="e.g., 5:00 AM">
+								</div>
+								<div class="col-md-6 mb-2">
+									<input type="text" name="tasks-__prefix__-description" class="form-control" placeholder="Description">
+								</div>
+								<div class="col-md-3 mb-2">
+									<select name="tasks-__prefix__-category" class="form-select">
+										<option value="">Select Category</option>
+										{% for category in categories %}
+										<option value="{{ category.id }}">{{ category.name }}</option>
+										{% endfor %}
+									</select>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col-md-6"><input type="checkbox" name="tasks-__prefix__-is_ibadah"></div>
+								<div class="col-md-6"><input type="checkbox" name="tasks-__prefix__-is_completed"></div>
+							</div>
+						</div>
+					</div>
+
+					<hr class="my-4">
+					<div class="d-flex justify-content-between">
+						<a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+						<button type="submit" class="btn btn-primary">Save Routine</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-lg-4">
+		<div class="card">
+			<div class="card-header"><h5 class="mb-0">Quick Tips</h5></div>
+			<div class="card-body">
+				<p class="mb-1">Use the form to add or edit tasks for this routine.</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+{% endblock %}

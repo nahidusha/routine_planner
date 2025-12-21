@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import CustomUserCreationForm, CustomAuthenticationForm
+from dashboard.models import Task
 
 def signup_view(request):
     if request.user.is_authenticated:
@@ -47,4 +48,34 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    return render(request, 'accounts/profile.html', {'user': request.user})
+    user = request.user
+
+    # Compute simple stats to avoid complex template expressions
+    total_routines = user.dailyroutine_set.count()
+    total_tasks = Task.objects.filter(routine__user=user).count()
+    completed_tasks = Task.objects.filter(routine__user=user, is_completed=True).count()
+
+    if request.method == 'POST':
+        # Minimal profile update: first_name, last_name, email
+        first = request.POST.get('first_name', '')
+        last = request.POST.get('last_name', '')
+        email = request.POST.get('email', '')
+        user.first_name = first
+        user.last_name = last
+        user.email = email
+        # optional fields
+        if 'phone' in request.POST:
+            try:
+                user.phone = request.POST.get('phone')
+            except Exception:
+                pass
+        user.save()
+        messages.success(request, 'Profile updated')
+        return redirect('profile')
+
+    return render(request, 'accounts/profile.html', {
+        'user': user,
+        'total_routines': total_routines,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+    })

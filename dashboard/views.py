@@ -43,7 +43,8 @@ def routine_create_view(request):
     return render(request, 'dashboard/routine_edit.html', {
         'routine_form': routine_form,
         'task_formset': task_formset,
-        'title': 'Create Routine'
+        'title': 'Create Routine',
+        'categories': TaskCategory.objects.all(),
     })
 
 @login_required
@@ -153,10 +154,15 @@ def dashboard_view(request):
 def routine_detail_view(request, pk):
     routine = get_object_or_404(DailyRoutine, pk=pk, user=request.user)
     tasks = routine.tasks.all()
-    
+    completed_tasks = tasks.filter(is_completed=True).count()
+    total_tasks = tasks.count()
+    pending_tasks = total_tasks - completed_tasks
+
     return render(request, 'dashboard/routine_detail.html', {
         'routine': routine,
-        'tasks': tasks
+        'tasks': tasks,
+        'completed_tasks': completed_tasks,
+        'pending_tasks': pending_tasks,
     })
 
 @login_required
@@ -178,10 +184,18 @@ def history_view(request):
         routines_page = paginator.page(1)
     except EmptyPage:
         routines_page = paginator.page(paginator.num_pages)
-    
+
+    # Annotate routines on the page with completed task counts to keep templates simple
+    for r in routines_page:
+        r.completed_tasks_count = r.tasks.filter(is_completed=True).count()
+
+    # Total completed tasks across all user's routines (for summary)
+    routines_completed = Task.objects.filter(routine__user=request.user, is_completed=True).count()
+
     return render(request, 'dashboard/history.html', {
         'routines': routines_page,
-        'date_filter': date_filter
+        'date_filter': date_filter,
+        'routines_completed': routines_completed,
     })
 
 @login_required
