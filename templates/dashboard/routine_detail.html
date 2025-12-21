@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ routine.date }} - Daily Routine Planner{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-0">Routine Details</h2>
+                <p class="text-muted">{{ routine.date|date:"F d, Y" }} • {{ routine.date|date:"l" }}</p>
+            </div>
+            <div>
+                <a href="{% url 'routine_edit' routine.id %}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit me-2"></i> Edit
+                </a>
+                <a href="{% url 'history' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Progress -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h1 class="display-1 text-primary">{{ routine.completion_percentage }}%</h1>
+                    <p class="text-muted">Overall Completion</p>
+                        <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" data-width="{{ routine.completion_percentage|default:0 }}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tasks -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i> Tasks</h5>
+            </div>
+            <div class="card-body">
+                {% if tasks %}
+                <div class="task-list">
+                    {% for task in tasks %}
+                    <div class="task-item {% if task.is_completed %}completed{% endif %} {% if task.is_ibadah %}ibadah{% endif %} mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-light text-dark me-3">
+                                        <i class="fas fa-clock me-1"></i>{{ task.time }}
+                                    </span>
+                                    {% if task.category %}
+                                    <span class="badge me-2" data-bg-color="{{ task.category.color|default:'#6c757d' }}">
+                                        {{ task.category.name }}
+                                    </span>
+                                    {% endif %}
+                                    {% if task.is_ibadah %}
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-mosque me-1"></i>Salah
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <h5 class="mb-2">{{ task.description }}</h5>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge {% if task.is_completed %}bg-success{% else %}bg-warning{% endif %} me-2">
+                                        {% if task.is_completed %}
+                                            <i class="fas fa-check-circle me-1"></i> Completed
+                                        {% else %}
+                                            <i class="fas fa-clock me-1"></i> Pending
+                                        {% endif %}
+                                    </span>
+                                    <small class="text-muted">
+                                        Created {{ task.created_at|timesince }} ago
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="ms-3">
+                                {% if task.is_completed %}
+                                <i class="fas fa-check-circle fa-2x text-success"></i>
+                                {% else %}
+                                <i class="fas fa-clock fa-2x text-warning"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                    <h5>No tasks for this day</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar Info -->
+    <div class="col-lg-4">
+        <!-- Date Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6><i class="fas fa-calendar me-2"></i> Date</h6>
+                    <p class="mb-0">{{ routine.date|date:"F d, Y" }}</p>
+                    <small class="text-muted">{{ routine.date|date:"l" }}</small>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-chart-line me-2"></i> Progress</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                            <div class="progress-bar" data-width="{{ routine.completion_percentage|default:0 }}"></div>
+                        </div>
+                        <span class="badge bg-primary">{{ routine.completion_percentage }}%</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-tasks me-2"></i> Task Summary</h6>
+                    <p class="mb-1">Total: {{ tasks|length }}</p>
+                    <p class="mb-1">Completed: {{ completed_tasks|default:0 }}</p>
+                    <p class="mb-0">Pending: {{ pending_tasks|default:0 }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-clock me-2"></i> Created</h6>
+                    <p class="mb-0">{{ routine.created_at|date:"M d, Y h:i A" }}</p>
+                    <small class="text-muted">{{ routine.created_at|timesince }} ago</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        {% if routine.notes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i> Notes</h5>
+            </div>
+            <div class="card-body">
+                {{ routine.notes|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i> Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'routine_edit' routine.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i> Edit Routine
+                    </a>
+                    <a href="{% url 'export_email' %}?routine={{ routine.id }}" class="btn btn-outline-primary">
+                        <i class="fas fa-envelope me-2"></i> Email This Report
+                    </a>
+                    <a href="{% url 'routine_delete' routine.id %}" class="btn btn-outline-danger">
+                        <i class="fas fa-trash me-2"></i> Delete Routine
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

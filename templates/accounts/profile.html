@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Daily Routine Planner{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-0">My Profile</h2>
+        <p class="text-muted">Manage your account settings and preferences</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Profile Info -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i> Profile Information</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <div class="avatar-placeholder rounded-circle bg-primary d-inline-flex align-items-center justify-content-center" 
+                         style="width: 100px; height: 100px;">
+                        <span class="text-white fs-2">{{ user.username|first|upper }}</span>
+                    </div>
+                </div>
+                
+                <h4 class="mb-2">{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted mb-4">{{ user.email }}</p>
+                
+                <div class="text-start">
+                    <div class="mb-3">
+                        <h6><i class="fas fa-user me-2"></i> Username</h6>
+                        <p class="mb-0">{{ user.username }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-envelope me-2"></i> Email</h6>
+                        <p class="mb-0">{{ user.email }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-calendar-plus me-2"></i> Member Since</h6>
+                        <p class="mb-0">{{ user.date_joined|date:"F d, Y" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-sign-in-alt me-2"></i> Last Login</h6>
+                        <p class="mb-0">{{ user.last_login|date:"F d, Y h:i A" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Account Settings -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i> Account Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" class="form-control" 
+                                   value="{{ user.first_name }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" class="form-control" 
+                                   value="{{ user.last_name }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" class="form-control" 
+                               value="{{ user.email }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="phone" class="form-control" 
+                               value="{{ user.phone|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Timezone</label>
+                        <select name="timezone" class="form-select">
+                            <option value="Asia/Dhaka" selected>Asia/Dhaka (Bangladesh)</option>
+                            <option value="UTC">UTC</option>
+                            <!-- Add more timezones as needed -->
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Your Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h3 class="text-primary mb-2">{{ user.dailyroutine_set.count }}</h3>
+                            <p class="mb-0 text-muted">Total Routines</p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            {% with total_tasks=user.dailyroutine_set.tasks.count %}
+                            <h3 class="text-success mb-2">{{ total_tasks }}</h3>
+                            <p class="mb-0 text-muted">Total Tasks</p>
+                            {% endwith %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            {% with completed=user.dailyroutine_set.tasks.filter.is_completed=True.count %}
+                            <h3 class="text-warning mb-2">{{ completed }}</h3>
+                            <p class="mb-0 text-muted">Completed Tasks</p>
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Account Actions</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'password_change' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-key me-2"></i> Change Password
+                        </a>
+                        <button class="btn btn-outline-danger" data-bs-toggle="modal" 
+                                data-bs-target="#deleteAccountModal">
+                            <i class="fas fa-trash-alt me-2"></i> Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Delete Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone.
+                </div>
+                <p>Are you sure you want to delete your account? All your data including routines, tasks, and history will be permanently deleted.</p>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="confirmDelete">
+                    <label class="form-check-label" for="confirmDelete">
+                        I understand that this action cannot be reversed
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                    Delete My Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Enable/disable delete button
+    $('#confirmDelete').change(function() {
+        $('#confirmDeleteBtn').prop('disabled', !$(this).is(':checked'));
+    });
+    
+    // Delete account confirmation
+    $('#confirmDeleteBtn').click(function() {
+        if (confirm('Are you absolutely sure? This will permanently delete ALL your data.')) {
+            // In a real app, this would make an API call
+            alert('Account deletion requested. In a real app, this would delete your account.');
+        }
+    });
+});
+</script>
+{% endblock %}

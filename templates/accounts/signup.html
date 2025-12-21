@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - Daily Routine Planner{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i> Create Account</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_username" class="form-label">Username</label>
+                                <input type="text" name="username" id="id_username" 
+                                       class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                                       placeholder="Choose username" required>
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.username.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Required. 150 characters or fewer.</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="id_email" class="form-label">Email Address</label>
+                                <input type="email" name="email" id="id_email" 
+                                       class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                                       placeholder="Enter your email" required>
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password1" class="form-label">Password</label>
+                                <input type="password" name="password1" id="id_password1" 
+                                       class="form-control {% if form.password1.errors %}is-invalid{% endif %}"
+                                       placeholder="Create password" required>
+                                {% if form.password1.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.password1.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password2" class="form-label">Confirm Password</label>
+                                <input type="password" name="password2" id="id_password2" 
+                                       class="form-control {% if form.password2.errors %}is-invalid{% endif %}"
+                                       placeholder="Confirm password" required>
+                                {% if form.password2.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.password2.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" class="text-decoration-none">Terms & Conditions</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="fas fa-user-plus me-2"></i> Create Account
+                        </button>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">
+                                Already have an account? 
+                                <a href="{% url 'login' %}" class="text-decoration-none">Login</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Daily Routine Planner{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-0">{{ title }}</h2>
+        <p class="text-muted">{{ description }}</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i> Routine Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="routineForm">
+                    {% csrf_token %}
+                    
+                    <!-- Date Selection -->
+                    <div class="mb-4">
+                        <label for="id_date" class="form-label">Date</label>
+                        <input type="date" name="date" id="id_date" 
+                               class="form-control" value="{{ form.date.value|default:'' }}" required>
+                        {% if form.date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="mb-4">
+                        <label for="id_notes" class="form-label">Notes (Optional)</label>
+                        <textarea name="notes" id="id_notes" class="form-control" 
+                                  rows="3" placeholder="Add any notes for today...">{{ form.notes.value|default:'' }}</textarea>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Tasks Section -->
+                    <h5 class="mb-3"><i class="fas fa-tasks me-2"></i> Tasks</h5>
+                    
+                    <div id="tasks-container" data-task-count="{{ form.tasks|length|default:'0' }}">
+                        {% if form.tasks %}
+                            {{ form.tasks.management_form }}
+                            {% for task_form in form.tasks %}
+                            <div class="task-form mb-3 p-3 border rounded">
+                                {{ task_form.id }}
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Time</label>
+                                        {{ task_form.time }}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Description</label>
+                                        {{ task_form.description }}
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Category</label>
+                                        {{ task_form.category }}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ task_form.is_ibadah }}
+                                            <label class="form-check-label">Salah/Ibadah Task</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            {{ task_form.is_completed }}
+                                            <label class="form-check-label">Completed</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if task_form.DELETE %}
+                                <div class="mt-2">
+                                    <div class="form-check">
+                                        {{ task_form.DELETE }}
+                                        <label class="form-check-label text-danger">Delete this task</label>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Default tasks for new routine -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Add tasks using the button below. You can add Salah tasks, work tasks, study tasks, etc.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Add Task Button -->
+                    <div class="text-center mb-4">
+                        <button type="button" id="add-task" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-2"></i> Add New Task
+                        </button>
+                    </div>
+                    
+                    <!-- Task Template (Hidden) -->
+                    <div id="task-template" class="d-none">
+                        <div class="task-form mb-3 p-3 border rounded">
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <label class="form-label">Time</label>
+                                    <input type="text" name="tasks-__prefix__-time" 
+                                           class="form-control" placeholder="e.g., 5:00 AM" required>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label">Description</label>
+                                    <input type="text" name="tasks-__prefix__-description" 
+                                           class="form-control" placeholder="e.g., Fajr Salah" required>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <label class="form-label">Category</label>
+                                    <select name="tasks-__prefix__-category" class="form-select">
+                                        <option value="">Select Category</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="tasks-__prefix__-is_ibadah" 
+                                               class="form-check-input">
+                                        <label class="form-check-label">Salah/Ibadah Task</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="tasks-__prefix__-is_completed" 
+                                               class="form-check-input">
+                                        <label class="form-check-label">Completed</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-task">
+                                    <i class="fas fa-trash me-1"></i> Remove Task
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Save Routine
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Tips -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i> Quick Tips</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light mb-3">
+                    <h6><i class="fas fa-clock text-primary me-2"></i> Time Format</h6>
+                    <p class="mb-0">Use 12-hour format: e.g., "5:00 AM", "2:30 PM"</p>
+                </div>
+                
+                <div class="alert alert-light mb-3">
+                    <h6><i class="fas fa-mosque text-success me-2"></i> Salah Tasks</h6>
+                    <p class="mb-0">Mark Salah tasks to highlight them in your routine</p>
+                </div>
+                
+                <div class="alert alert-light mb-3">
+                    <h6><i class="fas fa-tags text-warning me-2"></i> Categories</h6>
+                    <p class="mb-0">Use categories to organize your tasks</p>
+                </div>
+                
+                <!-- Default Tasks -->
+                <div class="mt-4">
+                    <h6>Quick Add Default Tasks:</h6>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary add-default-task" 
+                                data-time="5:00 AM" data-desc="Fajr Salah" data-ibadah="true">
+                            Add Fajr Salah
+                        </button>
+                        <button type="button" class="btn btn-outline-primary add-default-task" 
+                                data-time="8:30 AM" data-desc="Breakfast" data-category="Nutrition">
+                            Add Breakfast
+                        </button>
+                        <button type="button" class="btn btn-outline-primary add-default-task" 
+                                data-time="12:50 PM" data-desc="Zuhr Salah" data-ibadah="true">
+                            Add Zuhr Salah
+                        </button>
+                        <button type="button" class="btn btn-outline-primary add-default-task" 
+                                data-time="3:30 PM" data-desc="Asr Salah" data-ibadah="true">
+                            Add Asr Salah
+                        </button>
+                        <button type="button" class="btn btn-outline-primary add-default-task" 
+                                data-time="6:00 PM" data-desc="Study Time" data-category="Study">
+                            Add Study Time
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let taskCount = parseInt($('#tasks-container').data('task-count'), 10) || 0;
+    
+    // Add new task
+    $('#add-task').click(function() {
+        const template = $('#task-template').html();
+        const newForm = template.replace(/__prefix__/g, taskCount);
+        $('#tasks-container').append(newForm);
+        taskCount++;
+        
+        // Update form count
+        $('#id_tasks-TOTAL_FORMS').val(taskCount);
+    });
+    
+    // Remove task
+    $(document).on('click', '.remove-task', function() {
+        $(this).closest('.task-form').remove();
+    });
+    
+    // Add default task
+    $('.add-default-task').click(function() {
+        const time = $(this).data('time');
+        const desc = $(this).data('desc');
+        const ibadah = $(this).data('ibadah');
+        const category = $(this).data('category');
+        
+        const template = $('#task-template').html();
+        const newForm = template.replace(/__prefix__/g, taskCount);
+        const $newForm = $(newForm);
+        
+        // Set values
+        $newForm.find('input[name$="time"]').val(time);
+        $newForm.find('input[name$="description"]').val(desc);
+        
+        if (ibadah) {
+            $newForm.find('input[name$="is_ibadah"]').prop('checked', true);
+        }
+        
+        if (category) {
+            $newForm.find('select[name$="category"]').val(
+                Array.from($('#task-template select option')).find(opt => 
+                    opt.textContent === category)?.value || ''
+            );
+        }
+        
+        $('#tasks-container').append($newForm);
+        taskCount++;
+        $('#id_tasks-TOTAL_FORMS').val(taskCount);
+    });
+    
+    // Set default date to today
+    if (!$('#id_date').val()) {
+        const today = new Date().toISOString().split('T')[0];
+        $('#id_date').val(today);
+    }
+});
+</script>
+{% endblock %}

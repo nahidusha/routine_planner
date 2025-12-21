@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Daily Routine Planner{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary: #0F766E;
+            --primary-light: #5EEAD4;
+            --primary-dark: #115E59;
+            --secondary: #3B82F6;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --light: #F8FAFC;
+            --dark: #1E293B;
+            --gray: #64748B;
+            --border: #E2E8F0;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            padding-top: 56px;
+        }
+        
+        /* Navigation */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .sidebar .nav-link {
+            color: var(--dark);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 4px 15px;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+            min-height: calc(100vh - 56px);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: static;
+                height: auto;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 2px solid var(--border);
+            font-weight: 600;
+            padding: 15px 20px;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        
+        /* Progress Bars */
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            background-color: var(--border);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, var(--primary-light), var(--primary));
+            border-radius: 5px;
+        }
+        
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+        
+        /* Task Items */
+        .task-item {
+            padding: 15px;
+            border-left: 4px solid var(--border);
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.3s;
+        }
+        
+        .task-item:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .task-item.completed {
+            background-color: #F0FDF4;
+            border-left-color: var(--success);
+            text-decoration: line-through;
+            color: var(--gray);
+        }
+        
+        .task-item.ibadah {
+            background-color: #F0F9FF;
+            border-left-color: var(--primary);
+        }
+        
+        /* Statistics Cards */
+        .stat-card {
+            text-align: center;
+            padding: 30px 20px;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card.primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+        
+        .stat-card.success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        }
+        
+        .stat-card.warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #D97706 100%);
+        }
+        
+        .stat-card.info {
+            background: linear-gradient(135deg, var(--secondary) 0%, #1D4ED8 100%);
+        }
+        
+        /* Alerts */
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fas fa-tasks me-2"></i> Daily Routine Planner
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'profile' %}">
+                                    <i class="fas fa-user me-2"></i> Profile
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'signup' %}">Sign Up</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% if user.is_authenticated %}
+    <!-- Sidebar -->
+    <div class="sidebar d-none d-md-block">
+        <div class="p-3">
+            <div class="text-center mb-4">
+                <div class="mb-2">
+                    <i class="fas fa-user-circle fa-3x text-primary"></i>
+                </div>
+                <h6 class="mb-1">{{ user.get_full_name|default:user.username }}</h6>
+                <small class="text-muted">{{ user.email }}</small>
+            </div>
+            
+            <hr>
+            
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'dashboard' %}">
+                        <i class="fas fa-home me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'routine' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'routine_create' %}">
+                        <i class="fas fa-plus-circle me-2"></i> Create Routine
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}" 
+                       href="{% url 'history' %}">
+                        <i class="fas fa-history me-2"></i> History
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}" 
+                       href="{% url 'statistics' %}">
+                        <i class="fas fa-chart-bar me-2"></i> Statistics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'export' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'export_email' %}">
+                        <i class="fas fa-envelope me-2"></i> Email Report
+                    </a>
+                </li>
+            </ul>
+            
+            <hr class="my-4">
+            
+            <!-- Today's Progress -->
+            <div class="px-3">
+                <h6 class="text-muted mb-2">Today's Progress</h6>
+                {% if routine %}
+                <div class="progress mb-2">
+                    <div class="progress-bar" data-width="{{ routine.completion_percentage|default:0 }}"></div>
+                </div>
+                <small class="text-muted">{{ routine.completion_percentage }}% Complete</small>
+                {% else %}
+                <div class="progress mb-2">
+                    <div class="progress-bar" style="width: 0%;"></div>
+                </div>
+                <small class="text-muted">No routine today</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+        document.querySelectorAll('.progress-bar[data-width]').forEach(function(el){
+            var w = el.getAttribute('data-width') || '0';
+            el.style.width = w + '%';
+        });
+        document.querySelectorAll('[data-bg-color]').forEach(function(el){
+            var c = el.getAttribute('data-bg-color');
+            if(c) el.style.backgroundColor = c;
+        });
+    });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
