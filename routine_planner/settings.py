@@ -67,6 +67,13 @@ TEMPLATES = [
     },
 ]
 
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://rulesofrefresh.onrender.com",
+]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 WSGI_APPLICATION = 'routine_planner.wsgi.application'
 
 
