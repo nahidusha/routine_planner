@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Default Tasks{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:900px;margin:24px auto;">
+  <h2>Default Daily Tasks</h2>
+  <p>These tasks are applied to your routine when you click "Apply Defaults to Today" on the planner.</p>
+
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+    <input id="default-time" class="form-control" placeholder="Time (optional)" style="max-width:140px;padding:8px;border:1px solid #E2E8F0;border-radius:6px;" />
+    <input id="default-desc" class="form-control" placeholder="Default task description" style="flex:1;padding:8px;border:1px solid #E2E8F0;border-radius:6px;" />
+    <label style="display:flex;align-items:center;gap:6px;color:#64748B;"><input id="default-ibadah" type="checkbox" /> Ibadah</label>
+    <button class="btn btn-primary" onclick="createDefault()">Add Default</button>
+  </div>
+
+  <div id="defaults-list" style="display:flex;flex-direction:column;gap:8px;">
+    <!-- default items will be loaded via JS -->
+  </div>
+
+  <div style="margin-top:18px;"><a href="{% url 'planner' %}" class="btn btn-outline-secondary">Back to Planner</a></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const root = document.getElementById('planner-root');
+  window.URLS = root ? root.dataset : {};
+  loadDefaults();
+});
+
+function getCookie(name){
+  let cookieValue = null;
+  if(document.cookie && document.cookie !== ''){
+    const cookies = document.cookie.split(';');
+    for(let i=0;i<cookies.length;i++){ const c = cookies[i].trim(); if(c.startsWith(name+'=')){ cookieValue = decodeURIComponent(c.substring(name.length+1)); break; } }
+  }
+  return cookieValue;
+}
+
+async function loadDefaults(){
+  try{
+    const res = await fetch('{% url "defaults_list" %}');
+    const data = await res.json();
+    const container = document.getElementById('defaults-list');
+    container.innerHTML = '';
+    if(data.success && data.defaults && data.defaults.length){
+      data.defaults.forEach(function(d){
+        const div = document.createElement('div');
+        div.className = 'task';
+        div.setAttribute('data-default-id', d.id);
+        div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div><strong>' + (d.time||'') + '</strong> &nbsp; ' + d.description + (d.is_ibadah? ' <em>(Ibadah)</em>':'') + '</div>' +
+          '<div><button class="btn btn-sm btn-danger" onclick="deleteDefault(\''+d.id+'\')">Delete</button></div>' +
+          '</div>';
+        container.appendChild(div);
+      });
+    } else {
+      container.innerHTML = '<div class="text-muted">No defaults yet.</div>';
+    }
+  }catch(err){ console.error(err); document.getElementById('defaults-list').innerHTML = '<div class="text-danger">Could not load defaults.</div>'; }
+}
+
+async function createDefault(){
+  const time = document.getElementById('default-time').value.trim();
+  const desc = document.getElementById('default-desc').value.trim();
+  const is_ibadah = document.getElementById('default-ibadah').checked;
+  if(!desc){ alert('Enter default task description'); return; }
+  const csrftoken = getCookie('csrftoken');
+  try{
+    const res = await fetch('{% url "create_default" %}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({ time: time, description: desc, is_ibadah: is_ibadah }) });
+    const data = await res.json();
+    if(data.success){ document.getElementById('default-time').value=''; document.getElementById('default-desc').value=''; document.getElementById('default-ibadah').checked=false; loadDefaults(); }
+    else alert('Create default failed: '+(data.error||'unknown'));
+  }catch(err){ alert('Error: '+err.message); }
+}
+
+async function deleteDefault(id){
+  if(!confirm('Delete this default?')) return;
+  const csrftoken = getCookie('csrftoken');
+  try{
+    const res = await fetch('{% url "delete_default" %}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({ id: id }) });
+    const data = await res.json();
+    if(data.success) loadDefaults(); else alert('Delete failed: '+(data.error||'unknown'));
+  }catch(err){ alert('Error: '+err.message); }
+}
+</script>
+{% endblock %}

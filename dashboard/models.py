@@ -48,3 +48,20 @@ class Task(models.Model):
     
     def __str__(self):
         return f"{self.time} - {self.description[:50]}"
+
+
+class DefaultTask(models.Model):
+    """User-specific default tasks that can be applied to each day's routine."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    time = models.CharField(max_length=20, blank=True)
+    description = models.CharField(max_length=200)
+    is_ibadah = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return f"Default: {self.description[:50]}"

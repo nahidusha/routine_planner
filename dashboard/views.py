@@ -5,7 +5,8 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import DailyRoutine, Task, TaskCategory
+from .models import DailyRoutine, Task, TaskCategory, DefaultTask
+from django.db import DatabaseError
 from .forms import DailyRoutineForm, TaskFormSet
 import json
 from datetime import date, timedelta
@@ -165,10 +166,18 @@ def planner_view(request):
         defaults={'notes': ''}
     )
 
+    # Load defaults defensively in case migrations haven't been applied yet
+    try:
+        defaults_qs = DefaultTask.objects.filter(user=request.user, active=True)
+        defaults_list = list(defaults_qs)
+    except DatabaseError:
+        defaults_list = []
+
     context = {
         'routine': routine,
         'today': today,
         'categories': TaskCategory.objects.all(),
+        'defaults': defaults_list,
     }
 
     return render(request, 'dashboard/planner.html', context)
@@ -404,3 +413,109 @@ def create_task_view(request):
             'category': category.name if category else None,
         }
     })
+
+
+@login_required
+def list_default_tasks_view(request):
+    """Return JSON list of user's active default tasks."""
+    try:
+        defaults = DefaultTask.objects.filter(user=request.user, active=True).order_by('order', 'created_at')
+    except DatabaseError:
+        return JsonResponse({'success': False, 'defaults': [], 'error': 'defaults not available'}, status=500)
+
+    items = []
+    for d in defaults:
+        items.append({
+            'id': d.pk,
+            'time': d.time,
+            'description': d.description,
+            'is_ibadah': d.is_ibadah,
+            'order': d.order,
+        })
+    return JsonResponse({'success': True, 'defaults': items})
+
+
+@login_required
+def default_manager_view(request):
+    """Render a separate management page for user's default tasks."""
+    try:
+        defaults_qs = DefaultTask.objects.filter(user=request.user, active=True).order_by('order', 'created_at')
+        defaults_list = list(defaults_qs)
+    except DatabaseError:
+        defaults_list = []
+
+    context = {
+        'defaults': defaults_list,
+    }
+    return render(request, 'dashboard/defaults.html', context)
+
+
+@login_required
+def create_default_task_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=400)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    description = data.get('description')
+    if not description:
+        return JsonResponse({'success': False, 'error': 'description required'}, status=400)
+
+    time_val = data.get('time', '')
+    is_ibadah = bool(data.get('is_ibadah') or False)
+    order = data.get('order') or 0
+
+    try:
+        d = DefaultTask.objects.create(user=request.user, time=time_val, description=description, is_ibadah=is_ibadah, order=order)
+    except DatabaseError:
+        return JsonResponse({'success': False, 'error': 'could not create default (migrations?)'}, status=500)
+
+    return JsonResponse({'success': True, 'default': {'id': d.pk, 'time': d.time, 'description': d.description, 'is_ibadah': d.is_ibadah}})
+
+
+@login_required
+def delete_default_task_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=400)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    d_id = data.get('id')
+    if not d_id:
+        return JsonResponse({'success': False, 'error': 'id required'}, status=400)
+
+    try:
+        d = DefaultTask.objects.get(pk=d_id, user=request.user)
+        d.delete()
+        return JsonResponse({'success': True})
+    except DefaultTask.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Default not found'}, status=404)
+    except DatabaseError:
+        return JsonResponse({'success': False, 'error': 'could not delete default (migrations?)'}, status=500)
+
+
+@login_required
+def apply_defaults_view(request):
+    """Create today's tasks from active defaults for the user."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=400)
+
+    today = timezone.now().date()
+    routine, created = DailyRoutine.objects.get_or_create(user=request.user, date=today, defaults={'notes': ''})
+
+    try:
+        defaults = DefaultTask.objects.filter(user=request.user, active=True).order_by('order', 'created_at')
+    except DatabaseError:
+        return JsonResponse({'success': False, 'error': 'defaults not available'}, status=500)
+
+    created_tasks = []
+    for d in defaults:
+        order = (routine.tasks.count() or 0) + 1
+        t = Task.objects.create(routine=routine, time=d.time, description=d.description, is_ibadah=d.is_ibadah, order=order)
+        created_tasks.append({'id': t.pk, 'time': t.time, 'description': t.description, 'is_ibadah': t.is_ibadah})
+
+    return JsonResponse({'success': True, 'created': created_tasks})

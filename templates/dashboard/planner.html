@@ -39,7 +39,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-planner">
+<div id="planner-root" class="container-planner"
+  data-url-toggle-task="{% url 'toggle_task' %}"
+  data-url-create-task="{% url 'create_task' %}"
+  data-url-send-report="{% url 'send_report' %}"
+  data-url-apply-defaults="{% url 'apply_defaults' %}">
   <div class="header-card">
     <h1>📋 Daily Routine Planner</h1>
     <div id="current-date">{{ today }}</div>
@@ -77,6 +81,19 @@
       <button class="btn btn-primary" onclick="createTask()" style="padding:8px 12px;border-radius:6px;">+ Add</button>
     </div>
 
+    <div style="margin-bottom:12px;border-top:1px dashed var(--border);padding-top:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h5 style="margin:0">Default Daily Tasks</h5>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-outline-secondary" onclick="applyDefaults()">Apply Defaults to Today</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <a href="{% url 'defaults_manage' %}" class="btn btn-outline-secondary">Manage Default Tasks</a>
+      </div>
+    </div>
+
     <div class="routine">
       {% for task in routine.tasks.all %}
       <div class="task {% if task.is_completed %}completed{% endif %} {% if task.is_ibadah %}ibadah{% endif %}" data-id="{{ task.pk }}">
@@ -112,7 +129,9 @@
 </div>
 
 {% endblock %}
-
+$env:EMAIL_HOST_USER = "your-email@gmail.com"
+$env:EMAIL_HOST_PASSWORD = "your-app-password"
+$env:DEFAULT_FROM_EMAIL = "your-email@gmail.com"
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -121,6 +140,9 @@ document.addEventListener('DOMContentLoaded', function(){
   const total = document.querySelectorAll('.task').length;
   document.getElementById('total-count').textContent = total;
   updateProgress();
+  // read URLs from data attributes to avoid template tags inside script
+  const root = document.getElementById('planner-root');
+  window.URLS = root ? root.dataset : {};
 });
 
 function getCookie(name) {
@@ -153,7 +175,7 @@ async function toggleTask(checkboxEl){
   const taskId = taskEl.getAttribute('data-id');
   const csrftoken = getCookie('csrftoken');
   try{
-    const res = await fetch('{% url "toggle_task" %}', {
+    const res = await fetch(window.URLS.urlToggleTask, {
       method: 'POST',
       headers: {'Content-Type':'application/json','X-CSRFToken':csrftoken},
       body: JSON.stringify({task_id:taskId}),
@@ -177,11 +199,21 @@ async function sendReport(){
   const recipient = document.getElementById('recipient-email').value.trim();
   if(!recipient){ alert('Enter recipient email'); return; }
   const taskEls = document.querySelectorAll('.task');
-  const tasksPayload = Array.from(taskEls).map(t=>({ time: t.querySelector('.task-time')?.textContent||'', text: t.querySelector('.task-content')?.textContent||'', category: t.querySelector('.task-content small')?.textContent||'', status: t.classList.contains('completed')?'Completed':'Pending' }));
+  const tasksPayload = Array.from(taskEls).map(function(t){
+    var timeEl = t.querySelector('.task-time');
+    var contentEl = t.querySelector('.task-content');
+    var smallEl = contentEl ? contentEl.querySelector('small') : null;
+    return {
+      time: (timeEl && timeEl.textContent) || '',
+      text: (contentEl && contentEl.textContent) || '',
+      category: (smallEl && smallEl.textContent) || '',
+      status: t.classList.contains('completed') ? 'Completed' : 'Pending'
+    };
+  });
   const payload = { email: recipient, date: new Date().toLocaleDateString(), subject: 'Daily Routine Report', tasks: tasksPayload };
   const csrftoken = getCookie('csrftoken');
   try{
-    const res = await fetch('{% url "send_report" %}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify(payload), credentials:'same-origin' });
+    const res = await fetch(window.URLS.urlSendReport, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify(payload), credentials:'same-origin' });
     const data = await res.json();
     if(data.success){ hideExportModal(); alert('Report sent'); }
     else alert('Send failed: '+(data.error||'unknown'));
@@ -200,7 +232,7 @@ async function createTask(){
   const payload = { time: time, description: desc, is_ibadah: is_ibadah };
   const csrftoken = getCookie('csrftoken');
   try{
-    const res = await fetch('{% url "create_task" %}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify(payload), credentials:'same-origin' });
+    const res = await fetch(window.URLS.urlCreateTask, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify(payload), credentials:'same-origin' });
     const data = await res.json();
     if(data.success){
       const t = data.task;
@@ -208,13 +240,72 @@ async function createTask(){
       const div = document.createElement('div');
       div.className = 'task' + (t.is_completed? ' completed':'') + (t.is_ibadah? ' ibadah':'');
       div.setAttribute('data-id', t.id);
-      div.innerHTML = `<div class="task-checkbox ${t.is_completed? 'checked':''}" onclick="toggleTask(this)"></div><div class="task-time">${t.time||''}</div><div class="task-content">${t.description} <small style="margin-left:8px;color:var(--text-light);">${t.category||'Regular'}</small></div>`;
+      div.innerHTML = '<div class="task-checkbox ' + (t.is_completed? 'checked':'' ) + '" onclick="toggleTask(this)"></div><div class="task-time">' + (t.time||'') + '</div><div class="task-content">' + t.description + ' <small style="margin-left:8px;color:var(--text-light);">' + (t.category||'Regular') + '</small></div>';
       container.appendChild(div);
       document.getElementById('new-task-time').value=''; document.getElementById('new-task-desc').value=''; document.getElementById('new-task-ibadah').checked=false;
       const total = document.querySelectorAll('.task').length; document.getElementById('total-count').textContent = total; updateProgress();
     } else {
       alert('Create failed: ' + (data.error||'unknown'));
     }
+  }catch(err){ alert('Error: '+err.message); }
+}
+
+// Default tasks management
+async function createDefault(){
+  const time = document.getElementById('default-time').value.trim();
+  const desc = document.getElementById('default-desc').value.trim();
+  const is_ibadah = document.getElementById('default-ibadah').checked;
+  if(!desc){ alert('Enter default task description'); return; }
+  const payload = { time: time, description: desc, is_ibadah: is_ibadah };
+  const csrftoken = getCookie('csrftoken');
+  try{
+    const res = await fetch(window.URLS.urlCreateDefault, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify(payload), credentials:'same-origin' });
+    const data = await res.json();
+    if(data.success){
+      // append to defaults list
+      const d = data.default;
+      const container = document.getElementById('defaults-list');
+      const div = document.createElement('div');
+      div.className = 'task';
+      div.setAttribute('data-default-id', d.id);
+      div.innerHTML = '<div style="display:flex;justify-content:space-between;width:100%;align-items:center;"><div style="display:flex;gap:12px;align-items:center;"><div class="task-time">' + (d.time||'') + '</div><div class="task-content">' + d.description + ' <small style="margin-left:8px;color:var(--text-light);">' + (d.is_ibadah? 'Ibadah':'') + '</small></div></div><div><button class="btn btn-sm btn-outline-danger" onclick="deleteDefault(' + d.id + ')">Delete</button></div></div>';
+      container.appendChild(div);
+      document.getElementById('default-time').value=''; document.getElementById('default-desc').value=''; document.getElementById('default-ibadah').checked=false;
+    } else alert('Create default failed: '+(data.error||'unknown'));
+  }catch(err){ alert('Error: '+err.message); }
+}
+
+async function deleteDefault(id){
+  if(!confirm('Delete this default?')) return;
+  const csrftoken = getCookie('csrftoken');
+  try{
+    const res = await fetch(window.URLS.urlDeleteDefault, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({id:id}), credentials:'same-origin' });
+    const data = await res.json();
+    if(data.success){
+      const el = document.querySelector('[data-default-id="'+id+'"]');
+      if(el) el.remove();
+    } else alert('Delete failed: '+(data.error||'unknown'));
+  }catch(err){ alert('Error: '+err.message); }
+}
+
+async function applyDefaults(){
+  if(!confirm('Apply all active defaults to today?')) return;
+  const csrftoken = getCookie('csrftoken');
+  try{
+    const res = await fetch(window.URLS.urlApplyDefaults, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({}), credentials:'same-origin' });
+    const data = await res.json();
+    if(data.success){
+      // append created tasks to DOM
+      const container = document.querySelector('.routine');
+      for(const t of data.created||[]){
+        var div = document.createElement('div');
+        div.className = 'task' + (t.is_ibadah? ' ibadah':'');
+        div.setAttribute('data-id', t.id);
+        div.innerHTML = '<div class="task-checkbox" onclick="toggleTask(this)"></div><div class="task-time">' + (t.time||'') + '</div><div class="task-content">' + t.description + ' <small style="margin-left:8px;color:var(--text-light);">Regular</small></div>';
+        container.appendChild(div);
+      }
+      const total = document.querySelectorAll('.task').length; document.getElementById('total-count').textContent = total; updateProgress();
+    } else alert('Apply defaults failed: '+(data.error||'unknown'));
   }catch(err){ alert('Error: '+err.message); }
 }
 </script>
