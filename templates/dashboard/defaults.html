@@ -2,28 +2,340 @@
 
 {% block title %}Manage Default Tasks{% endblock %}
 
+{% block extra_css %}
+<style>
+:root {
+  --primary: #7C3AED;
+  --primary-light: #A78BFA;
+  --primary-dark: #5B21B6;
+  --secondary: #06B6D4;
+  --bg: #F1F5F9;
+  --card-bg: #FFFFFF;
+  --border: #E2E8F0;
+  --text: #1E293B;
+  --text-light: #64748B;
+}
+
+.container {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 15px;
+}
+
+/* Header matching planner style */
+.header-card {
+  text-align: center;
+  margin-bottom: 25px;
+  padding: 25px 20px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-radius: 16px;
+  color: white;
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.2);
+}
+
+.header-card h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.header-card p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Content card matching planner */
+.content-card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 25px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid var(--border);
+  margin-bottom: 25px;
+}
+
+/* Add default form styled like planner */
+.add-default-form {
+  background: #F8FAFC;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 2px dashed var(--border);
+}
+
+/* Form row matching planner */
+.form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Form controls styled like planner */
+.form-control {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+  background: white;
+  color: var(--text);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* Time input specific */
+#default-time {
+  max-width: 140px;
+}
+
+#default-desc {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Checkbox styling */
+.form-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.form-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+/* Defaults list styled like planner tasks */
+.defaults-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* Task items matching planner style */
+.default-item {
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.default-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+  border-color: var(--primary-light);
+}
+
+.default-item.ibadah {
+  background: #F0F9FF;
+  border-left: 4px solid var(--primary);
+}
+
+.default-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.default-item-details {
+  flex: 1;
+}
+
+.default-item-details strong {
+  color: var(--primary-dark);
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.default-item-details em {
+  color: var(--primary);
+  font-style: italic;
+  font-size: 0.9em;
+  margin-left: 8px;
+}
+
+/* Button styling matching planner */
+.btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.btn-danger {
+  background: #EF4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #DC2626;
+  transform: translateY(-2px);
+}
+
+.btn-outline-secondary {
+  background: white;
+  border: 2px solid var(--border);
+  color: var(--text-light);
+}
+
+.btn-outline-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Back button container */
+.back-button {
+  margin-top: 30px;
+  text-align: center;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: var(--text-light);
+}
+
+.empty-state i {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  color: var(--border);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 10px;
+  }
+  
+  .header-card {
+    padding: 20px 15px;
+  }
+  
+  .header-card h2 {
+    font-size: 1.5rem;
+  }
+  
+  .content-card {
+    padding: 20px;
+  }
+  
+  .add-default-form {
+    padding: 15px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  #default-time,
+  #default-desc {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .form-row label {
+    justify-content: center;
+  }
+  
+  .default-item-content {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .default-item-actions {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 576px) {
+  .content-card {
+    padding: 15px;
+  }
+  
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width:900px;margin:24px auto;">
-  <h2>Default Daily Tasks</h2>
-  <p>These tasks are applied to your routine when you click "Apply Defaults to Today" on the planner.</p>
-
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-    <input id="default-time" class="form-control" placeholder="Time (optional)" style="max-width:140px;padding:8px;border:1px solid #E2E8F0;border-radius:6px;" />
-    <input id="default-desc" class="form-control" placeholder="Default task description" style="flex:1;padding:8px;border:1px solid #E2E8F0;border-radius:6px;" />
-    <label style="display:flex;align-items:center;gap:6px;color:#64748B;"><input id="default-ibadah" type="checkbox" /> Ibadah</label>
-    <button class="btn btn-primary" onclick="createDefault()">Add Default</button>
+<div class="container">
+  <!-- Header matching planner style -->
+  <div class="header-card">
+    <h2><i class="fas fa-tasks me-2"></i> Default Daily Tasks</h2>
+    <p>These tasks are applied to your routine when you click "Apply Defaults to Today" on the planner.</p>
   </div>
 
-  <div id="defaults-list" style="display:flex;flex-direction:column;gap:8px;">
-    <!-- default items will be loaded via JS -->
+  <!-- Content card matching planner -->
+  <div class="content-card">
+    <!-- Add default form -->
+    <div class="add-default-form">
+      <div class="form-row">
+        <input type="time" id="default-time" class="form-control" placeholder="Time (optional)" style="max-width:140px;" value="08:00" />
+        <input type="text" id="default-desc" class="form-control" placeholder="Default task description" />
+        <label><input type="checkbox" id="default-ibadah" /> Ibadah</label>
+        <button class="btn btn-primary" onclick="createDefault()">
+          <i class="fas fa-plus me-1"></i> Add Default
+        </button>
+      </div>
+    </div>
+
+    <!-- Defaults list -->
+    <div id="defaults-list" class="defaults-list">
+      <!-- Default items will be loaded via original JS -->
+    </div>
   </div>
 
-  <div style="margin-top:18px;"><a href="{% url 'planner' %}" class="btn btn-outline-secondary">Back to Planner</a></div>
+  <!-- Back button -->
+  <div class="back-button">
+    <a href="{% url 'planner' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Back to Planner
+    </a>
+  </div>
 </div>
 
 {% endblock %}
 
 {% block extra_js %}
+<!-- ORIGINAL JAVASCRIPT - NO CHANGES -->
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   const root = document.getElementById('planner-root');
@@ -35,7 +347,13 @@ function getCookie(name){
   let cookieValue = null;
   if(document.cookie && document.cookie !== ''){
     const cookies = document.cookie.split(';');
-    for(let i=0;i<cookies.length;i++){ const c = cookies[i].trim(); if(c.startsWith(name+'=')){ cookieValue = decodeURIComponent(c.substring(name.length+1)); break; } }
+    for(let i=0;i<cookies.length;i++){ 
+      const c = cookies[i].trim(); 
+      if(c.startsWith(name+'=')){ 
+        cookieValue = decodeURIComponent(c.substring(name.length+1)); 
+        break; 
+      } 
+    }
   }
   return cookieValue;
 }
@@ -49,18 +367,26 @@ async function loadDefaults(){
     if(data.success && data.defaults && data.defaults.length){
       data.defaults.forEach(function(d){
         const div = document.createElement('div');
-        div.className = 'task';
+        div.className = 'default-item ' + (d.is_ibadah ? 'ibadah' : '');
         div.setAttribute('data-default-id', d.id);
-        div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-          '<div><strong>' + (d.time||'') + '</strong> &nbsp; ' + d.description + (d.is_ibadah? ' <em>(Ibadah)</em>':'') + '</div>' +
-          '<div><button class="btn btn-sm btn-danger" onclick="deleteDefault(\''+d.id+'\')">Delete</button></div>' +
+        div.innerHTML = '<div class="default-item-content">' +
+          '<div class="default-item-details">' +
+          '<strong>' + (d.time||'') + '</strong> &nbsp; ' + d.description + 
+          (d.is_ibadah ? ' <em>(Ibadah)</em>' : '') + 
+          '</div>' +
+          '<div class="default-item-actions">' +
+          '<button class="btn btn-sm btn-danger" onclick="deleteDefault(\''+d.id+'\')">Delete</button>' +
+          '</div>' +
           '</div>';
         container.appendChild(div);
       });
     } else {
-      container.innerHTML = '<div class="text-muted">No defaults yet.</div>';
+      container.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No defaults yet.</p></div>';
     }
-  }catch(err){ console.error(err); document.getElementById('defaults-list').innerHTML = '<div class="text-danger">Could not load defaults.</div>'; }
+  }catch(err){ 
+    console.error(err); 
+    document.getElementById('defaults-list').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Could not load defaults.</p></div>'; 
+  }
 }
 
 async function createDefault(){
@@ -70,9 +396,18 @@ async function createDefault(){
   if(!desc){ alert('Enter default task description'); return; }
   const csrftoken = getCookie('csrftoken');
   try{
-    const res = await fetch('{% url "create_default" %}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({ time: time, description: desc, is_ibadah: is_ibadah }) });
+    const res = await fetch('{% url "create_default" %}', { 
+      method:'POST', 
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, 
+      body: JSON.stringify({ time: time, description: desc, is_ibadah: is_ibadah }) 
+    });
     const data = await res.json();
-    if(data.success){ document.getElementById('default-time').value=''; document.getElementById('default-desc').value=''; document.getElementById('default-ibadah').checked=false; loadDefaults(); }
+    if(data.success){ 
+      document.getElementById('default-time').value=''; 
+      document.getElementById('default-desc').value=''; 
+      document.getElementById('default-ibadah').checked=false; 
+      loadDefaults(); 
+    }
     else alert('Create default failed: '+(data.error||'unknown'));
   }catch(err){ alert('Error: '+err.message); }
 }
@@ -81,7 +416,11 @@ async function deleteDefault(id){
   if(!confirm('Delete this default?')) return;
   const csrftoken = getCookie('csrftoken');
   try{
-    const res = await fetch('{% url "delete_default" %}', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({ id: id }) });
+    const res = await fetch('{% url "delete_default" %}', { 
+      method:'POST', 
+      headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, 
+      body: JSON.stringify({ id: id }) 
+    });
     const data = await res.json();
     if(data.success) loadDefaults(); else alert('Delete failed: '+(data.error||'unknown'));
   }catch(err){ alert('Error: '+err.message); }

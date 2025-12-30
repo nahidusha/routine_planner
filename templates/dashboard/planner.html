@@ -192,6 +192,7 @@
   font-size: 1rem;
   transition: border-color 0.3s;
   background: white;
+  color: var(--text); /* Added for better visibility */
 }
 
 .input-field:focus {
@@ -200,12 +201,14 @@
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
-/* Time input specific styling */
+/* FIXED: Time input styling - Show the calendar picker */
 input[type="time"] {
   font-family: inherit;
+  color: var(--text); /* Make text visible */
 }
 
-input[type="time"]::-webkit-calendar-picker-indicator {
+/* REMOVED the problematic CSS that hides the calendar picker */
+/* input[type="time"]::-webkit-calendar-picker-indicator {
   background: transparent;
   color: transparent;
   cursor: pointer;
@@ -213,7 +216,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   width: 100%;
   height: 100%;
   margin: 0;
-}
+} */
 
 /* Mobile optimization for time input */
 @media (max-width: 768px) {
@@ -229,6 +232,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s;
+  color: var(--text); /* Added for better visibility */
 }
 
 .form-control:focus {
@@ -641,33 +645,25 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     <!-- Section Header -->
     <div class="section-header">
       <h3 class="section-title">Your Daily Tasks</h3>
-      <!-- <a href="{% url 'routine_create' %}" class="btn btn-outline-primary">
-        <i class="fas fa-plus-circle me-1"></i> New Routine
-      </a> -->
 
-
-         <!-- Default Tasks Section -->
-    <div class="defaults-section">
-      <div class="defaults-header">
-        <h4 class="defaults-title">Default Tasks</h4>
-        <div class="defaults-actions">
-          <a href="{% url 'defaults_manage' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-cog me-1"></i> Manage Defaults
-          </a>
-          <button class="btn btn-outline-primary" onclick="applyDefaults()">
-            <i class="fas fa-magic me-1"></i> Apply to Today
-          </button>
+      <!-- Default Tasks Section -->
+      <div class="defaults-section">
+        <div class="defaults-header">
+          <h4 class="defaults-title">Default Tasks</h4>
+          <div class="defaults-actions">
+            <a href="{% url 'defaults_manage' %}" class="btn btn-outline-secondary">
+              <i class="fas fa-cog me-1"></i> Manage Defaults
+            </a>
+            <button class="btn btn-outline-primary" onclick="applyDefaults()">
+              <i class="fas fa-magic me-1"></i> Apply to Today
+            </button>
+          </div>
         </div>
+        <p style="color: var(--text-light); margin: 0; font-size: 0.9rem;">
+          Apply your default tasks to today's list with one click.
+        </p>
       </div>
-      <p style="color: var(--text-light); margin: 0; font-size: 0.9rem;">
-        Apply your default tasks to today's list with one click.
-      </p>
     </div>
-
-    </div>
-
-
-    
 
     <!-- Add Task Form -->
     <div class="add-task-form">
@@ -676,27 +672,16 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         <div class="form-group">
           <div class="input-group">
             <label for="new-task-time"><i class="fas fa-clock"></i> Select Time</label>
-            <input type="time" id="new-task-time" class="input-field" step="300">
+            <input type="time" id="new-task-time" class="input-field" step="300" value="08:00">
           </div>
         </div>
 
-        
         <!-- Task Description -->
         <div class="form-group">
           <label for="new-task-desc">Task Description</label>
-          <input type="text" id="new-task-desc" class="form-control">
+          <input type="text" id="new-task-desc" class="form-control" placeholder="Enter task description...">
         </div>
         
-        <!-- Ibadah Checkbox -->
-        <!-- <div class="form-group">
-          <div class="checkbox-group">
-            <input type="checkbox" id="new-task-ibadah">
-            <label for="new-task-ibadah" style="margin: 0; font-weight: normal;">
-              <i class="fas fa-pray me-1"></i> Ibadah Task
-            </label>
-          </div>
-        </div>
-         -->
         <!-- Add Button -->
         <div class="form-group">
           <button class="btn btn-primary" onclick="createTask()" style="height: 46px; width: 100%;">
@@ -706,7 +691,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
       </div>
     </div>
 
- 
     <!-- Task List -->
     <div class="routine">
       {% if routine.tasks.all %}
@@ -808,9 +792,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load URLs from data attributes
   const root = document.getElementById('planner-root');
   window.URLS = root ? root.dataset : {};
-  
-  // Set current time as default
-  setCurrentTime();
   
   // Focus on description field for quick typing
   document.getElementById('new-task-desc').focus();
@@ -947,7 +928,7 @@ async function sendReport() {
     const categoryEl = taskEl.querySelector('.task-category');
     
     return {
-      time: timeEl ? timeEl.textContent.replace('⏰', '').trim() : '',
+      time: timeEl ? timeEl.textContent.trim() : '',
       description: descEl ? descEl.textContent : '',
       category: categoryEl ? categoryEl.textContent : '',
       status: taskEl.classList.contains('completed') ? 'Completed' : 'Pending',
@@ -994,11 +975,10 @@ function saveData() {
 async function createTask() {
   const timeInput = document.getElementById('new-task-time');
   const descInput = document.getElementById('new-task-desc');
-  const ibadahCheckbox = document.getElementById('new-task-ibadah');
   
   const time = timeInput.value.trim();
   const desc = descInput.value.trim();
-  const is_ibadah = ibadahCheckbox.checked;
+  const is_ibadah = false; // Since ibadah checkbox is commented out
   
   if (!desc) {
     showToast('Please enter task description', 'error');
@@ -1019,6 +999,8 @@ async function createTask() {
     is_ibadah: is_ibadah
   };
   
+  console.log('Creating task with payload:', payload); // Debug log
+  
   const csrftoken = getCookie('csrftoken');
   const routineContainer = document.querySelector('.routine');
   
@@ -1033,6 +1015,8 @@ async function createTask() {
     });
     
     const data = await res.json();
+    console.log('Create task response:', data); // Debug log
+    
     if (data.success) {
       const task = data.task;
       
@@ -1069,10 +1053,8 @@ async function createTask() {
       
       routineContainer.appendChild(taskEl);
       
-      // Reset form
-      setCurrentTime();
+      // Reset form - keep time as is, clear description
       descInput.value = '';
-      ibadahCheckbox.checked = false;
       
       updateProgress();
       showToast('Task added successfully!', 'success');
@@ -1081,6 +1063,7 @@ async function createTask() {
       showToast('Failed to create task: ' + (data.error || 'Unknown error'), 'error');
     }
   } catch (err) {
+    console.error('Error creating task:', err); // Debug log
     showToast('Error: ' + err.message, 'error');
   }
 }
