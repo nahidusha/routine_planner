@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard container">
+  <header class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <p class="muted">Overview of site activity and quick actions</p>
+  </header>
+
+  <section class="cards">
+    <div class="card">
+      <div class="card-title">Users</div>
+      <div class="card-value">{{ total_users }}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Routines</div>
+      <div class="card-value">{{ total_routines }}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tasks</div>
+      <div class="card-value">{{ total_tasks }}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Defaults</div>
+      <div class="card-value">{{ total_defaults }}</div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <h3>Recent Routines</h3>
+      <table class="table">
+        <thead><tr><th>Date</th><th>User</th><th>Notes</th></tr></thead>
+        <tbody>
+          {% for r in recent_routines %}
+          <tr><td>{{ r.date }}</td><td>{{ r.user.username }}</td><td>{{ r.notes|truncatechars:60 }}</td></tr>
+          {% empty %}
+          <tr><td colspan="3">No recent routines</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Recent Tasks</h3>
+      <table class="table">
+        <thead><tr><th>Time</th><th>Description</th><th>Routine</th></tr></thead>
+        <tbody>
+          {% for t in recent_tasks %}
+          <tr><td>{{ t.time }}</td><td>{{ t.description|truncatechars:60 }}</td><td>{{ t.routine.date }}</td></tr>
+          {% empty %}
+          <tr><td colspan="3">No recent tasks</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <h3>Pending Approvals</h3>
+      {% if pending_users %}
+      <table class="table">
+        <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for u in pending_users %}
+          <tr id="pending-user-{{ u.pk }}">
+            <td>{{ u.username }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.created_at }}</td>
+            <td><button class="btn btn-sm btn-success" onclick="approveUser({{ u.pk }})">Approve</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="text-muted">No pending users.</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="actions">
+    <a href="{% url 'defaults_manage' %}" class="btn btn-outline-primary">Manage Default Tasks</a>
+    <a href="{% url 'history' %}" class="btn btn-outline-secondary">View History</a>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <h3>All Users</h3>
+      {% if all_users %}
+      <table class="table table-sm">
+        <thead><tr><th>Username</th><th>Email</th><th>Active</th><th>Staff</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for u in all_users %}
+          <tr id="user-row-{{ u.pk }}">
+            <td>{{ u.username }}</td>
+            <td>{{ u.email }}</td>
+            <td>{% if u.is_active %}Yes{% else %}No{% endif %}</td>
+            <td>{% if u.is_staff %}Yes{% else %}No{% endif %}</td>
+            <td>{{ u.created_at }}</td>
+            <td>
+              <button class="btn btn-sm btn-warning" onclick="resetUserPassword({{ u.pk }})">Reset Password</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteUser({{ u.pk }})">Delete</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="text-muted">No users found.</div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function approveUser(id){
+  if(!confirm('Approve this user?')) return;
+  const csrftoken = (document.cookie || '').split('; ').find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+  const url = '{% url "approve_user" 0 %}'.replace('/0/','/'+id+'/');
+  try{
+    const res = await fetch(url, { method: 'POST', headers: {'X-CSRFToken': csrftoken} });
+    const data = await res.json();
+    if(data.success){
+      const row = document.getElementById('pending-user-'+id);
+      if(row) row.remove();
+    } else {
+      alert('Could not approve: ' + (data.error||'unknown'));
+    }
+  }catch(e){ alert('Request failed'); }
+}
+</script>
+<script>
+async function resetUserPassword(id){
+  if(!confirm('Reset password for this user? This will set a new temporary password.')) return;
+  const csrftoken = (document.cookie || '').split('; ').find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+  try{
+    const res = await fetch('{% url "reset_user_password" %}', {
+      method: 'POST', headers: {'Content-Type':'application/json','X-CSRFToken': csrftoken}, body: JSON.stringify({user_id: id})
+    });
+    const data = await res.json();
+    if(data.success){
+      // show temporary password to admin (one-time)
+      alert('Temporary password: ' + (data.temp_password || '[sent to email]'));
+    } else {
+      alert('Could not reset: ' + (data.error||''));
+    }
+  }catch(e){ alert('Request failed'); }
+}
+
+async function deleteUser(id){
+  if(!confirm('Delete this user and all their data? This is irreversible.')) return;
+  const csrftoken = (document.cookie || '').split('; ').find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+  try{
+    const res = await fetch('{% url "delete_user" %}', {
+      method: 'POST', headers: {'Content-Type':'application/json','X-CSRFToken': csrftoken}, body: JSON.stringify({user_id: id})
+    });
+    const data = await res.json();
+    if(data.success){
+      const row = document.getElementById('user-row-'+id);
+      if(row) row.remove();
+    } else {
+      alert('Could not delete: ' + (data.error||''));
+    }
+  }catch(e){ alert('Request failed'); }
+}
+</script>
+{% endblock %}

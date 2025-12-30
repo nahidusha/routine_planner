@@ -43,7 +43,8 @@
   data-url-toggle-task="{% url 'toggle_task' %}"
   data-url-create-task="{% url 'create_task' %}"
   data-url-send-report="{% url 'send_report' %}"
-  data-url-apply-defaults="{% url 'apply_defaults' %}">
+  data-url-apply-defaults="{% url 'apply_defaults' %}"
+  data-url-delete-task="{% url 'delete_task' %}">
   <div class="header-card">
     <h1>📋 Daily Routine Planner</h1>
     <div id="current-date">{{ today }}</div>
@@ -97,9 +98,18 @@
     <div class="routine">
       {% for task in routine.tasks.all %}
       <div class="task {% if task.is_completed %}completed{% endif %} {% if task.is_ibadah %}ibadah{% endif %}" data-id="{{ task.pk }}">
-        <div class="task-checkbox {% if task.is_completed %}checked{% endif %}" onclick="toggleTask(this)"></div>
-        <div class="task-time">{{ task.time }}</div>
-        <div class="task-content">{{ task.description }} <small style="margin-left:8px;color:var(--text-light);">{{ task.category.name|default:'Regular' }}</small></div>
+        <div style="display:flex;align-items:center;gap:12px;width:100%;">
+          <div style="display:flex;align-items:center;gap:12px;flex:1">
+            <div class="task-checkbox {% if task.is_completed %}checked{% endif %}" onclick="toggleTask(this)"></div>
+            <div class="task-time">{{ task.time }}</div>
+            <div class="task-content">{{ task.description }} <small style="margin-left:8px;color:var(--text-light);">{{ task.category.name|default:'Regular' }}</small></div>
+          </div>
+          <div style="margin-left:8px">
+            <!-- <button class="btn btn-sm btn-outline-danger" onclick="deleteTask({{ task.pk }}, this)" title="Delete task">🗑</button> -->
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('{{ task.pk }}', this)" title="Delete task">🗑</button>
+            
+          </div>
+        </div>
       </div>
       {% empty %}
       <div class="alert alert-info">No tasks for today. Create a routine to add tasks.</div>
@@ -284,6 +294,20 @@ async function deleteDefault(id){
     if(data.success){
       const el = document.querySelector('[data-default-id="'+id+'"]');
       if(el) el.remove();
+    } else alert('Delete failed: '+(data.error||'unknown'));
+  }catch(err){ alert('Error: '+err.message); }
+}
+
+async function deleteTask(id, btnEl){
+  if(!confirm('Delete this task?')) return;
+  const csrftoken = getCookie('csrftoken');
+  try{
+    const res = await fetch(window.URLS.urlDeleteTask, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body: JSON.stringify({task_id:id}), credentials:'same-origin' });
+    const data = await res.json();
+    if(data.success){
+      const taskEl = btnEl ? btnEl.closest('.task') : document.querySelector('[data-id="'+id+'"]');
+      if(taskEl) taskEl.remove();
+      const total = document.querySelectorAll('.task').length; document.getElementById('total-count').textContent = total; updateProgress();
     } else alert('Delete failed: '+(data.error||'unknown'));
   }catch(err){ alert('Error: '+err.message); }
 }

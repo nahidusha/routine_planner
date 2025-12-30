@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Pending Users{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:900px;margin:24px auto;">
+  <h2>Pending User Approvals</h2>
+  <p>Only staff users can approve new signups.</p>
+
+  <div style="margin-top:12px;">
+    {% if pending %}
+      <table class="table">
+        <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for u in pending %}
+            <tr id="user-row-{{ u.pk }}">
+              <td>{{ u.username }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.created_at }}</td>
+              <td><button class="btn btn-sm btn-primary" onclick="approveUser({{ u.pk }})">Approve</button></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="text-muted">No pending users.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+async function approveUser(id){
+  if(!confirm('Approve this user?')) return;
+  const csrftoken = (document.cookie || '').split('; ').find(c=>c.startsWith('csrftoken='))?.split('=')[1] || '';
+  const res = await fetch('{% url "approve_user" 0 %}'.replace('/0/','/'+id+'/'), { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken} });
+  const data = await res.json();
+  if(data.success){ document.getElementById('user-row-'+id).remove(); }
+  else alert('Could not approve:'+ (data.error||''));
+}
+</script>
+{% endblock %}
+{% endblock %}

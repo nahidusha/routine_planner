@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import DailyRoutine, Task, TaskCategory, DefaultTask
 from django.db import DatabaseError
+from django.contrib.auth import get_user_model
 from .forms import DailyRoutineForm, TaskFormSet
 import json
 from datetime import date, timedelta
@@ -362,6 +363,31 @@ def toggle_task_view(request):
 
 
 @login_required
+def delete_task_view(request):
+    """Delete a task owned by the logged-in user. Expects JSON POST: { task_id: int }"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=400)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+    task_id = data.get('task_id') or data.get('id')
+    if not task_id:
+        return JsonResponse({'success': False, 'error': 'task_id required'}, status=400)
+
+    try:
+        task = Task.objects.get(pk=task_id, routine__user=request.user)
+        task.delete()
+        return JsonResponse({'success': True})
+    except Task.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Task not found'}, status=404)
+    except DatabaseError:
+        return JsonResponse({'success': False, 'error': 'could not delete task'}, status=500)
+
+
+@login_required
 def create_task_view(request):
     """Create a new Task on today's routine for the logged-in user.
     Expects JSON POST: { description, time?, category?, is_ibadah? }
@@ -448,6 +474,50 @@ def default_manager_view(request):
         'defaults': defaults_list,
     }
     return render(request, 'dashboard/defaults.html', context)
+
+
+@login_required
+def admin_dashboard_view(request):
+    # restrict to staff users
+    if not request.user.is_staff:
+        return redirect('dashboard')
+
+    User = get_user_model()
+    total_users = User.objects.count()
+    total_routines = DailyRoutine.objects.count()
+    total_tasks = Task.objects.count()
+    try:
+        total_defaults = DefaultTask.objects.count()
+    except DatabaseError:
+        total_defaults = 0
+
+    recent_routines = DailyRoutine.objects.select_related('user').order_by('-date')[:7]
+    recent_tasks = Task.objects.select_related('routine').order_by('-id')[:7]
+
+    # Pending user approvals (show a few recent inactive users)
+    try:
+        pending_users = User.objects.filter(is_active=False).order_by('-created_at')[:7]
+    except Exception:
+        pending_users = []
+
+    # All users (limit to recent 200 for dashboard listing)
+    try:
+        all_users = User.objects.all().order_by('-created_at')[:200]
+    except Exception:
+        all_users = []
+
+    context = {
+        'total_users': total_users,
+        'total_routines': total_routines,
+        'total_tasks': total_tasks,
+        'total_defaults': total_defaults,
+        'recent_routines': recent_routines,
+        'recent_tasks': recent_tasks,
+        'pending_users': pending_users,
+        'all_users': all_users,
+    }
+
+    return render(request, 'dashboard/admin_dashboard.html', context)
 
 
 @login_required
